@@ -657,6 +657,34 @@ describe("Kanban browser deep links", () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
+  it("finishes loading after same-board Back during the first board fetch", async () => {
+    let resolveBoard!: (value: unknown) => void;
+    const pendingBoard = new Promise((resolve) => { resolveBoard = resolve; });
+    const implementation = fetchJSON.getMockImplementation();
+    fetchJSON.mockImplementation((rawUrl: string, init?: RequestInit) => {
+      if (rawUrl === "/api/plugins/kanban/board?board=ops") return pendingBoard;
+      return implementation?.(rawUrl, init);
+    });
+    window.history.replaceState({}, "", "/kanban?board=ops&task=t_ops");
+    window.history.pushState({}, "", "/kanban?board=ops&task=t_other");
+    await renderKanban("/kanban?board=ops&task=t_other");
+    const push = vi.spyOn(window.history, "pushState");
+    const replace = vi.spyOn(window.history, "replaceState");
+
+    const popped = new Promise((resolve) =>
+      window.addEventListener("popstate", resolve, { once: true }),
+    );
+    window.history.back();
+    await act(async () => popped);
+    await act(async () => resolveBoard(board({ slug: "ops", tasks: [opsTask] })));
+
+    expect(window.location.search).toBe("?board=ops&task=t_ops");
+    await waitForText("Ops task");
+    expect(container.querySelector(".hermes-kanban-drawer")).not.toBeNull();
+    expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
   it.each(["shade", "Escape"])("pushes board-only history when closing by %s", async (method) => {
     await renderKanban("/kanban?board=ops&task=t_ops");
     await waitForText("Ops task");

@@ -919,9 +919,9 @@
         setTenantFilter("");
         setAssigneeFilter("");
         setIncludeArchived(false);
+        boardRequestGenerationRef.current += 1;
       }
       currentBoardRef.current = targetBoard;
-      boardRequestGenerationRef.current += 1;
       setBoard(targetBoard);
       setPendingTaskId(targetTask || null);
       setPendingTaskIsBoardQualified(!!taskIsBoardQualified);
