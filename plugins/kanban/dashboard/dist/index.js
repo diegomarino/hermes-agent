@@ -919,6 +919,9 @@
         setTenantFilter("");
         setAssigneeFilter("");
         setIncludeArchived(false);
+        setSelectedIds(new Set());
+        setLastSelectedId(null);
+        setFailedIds(new Set());
         boardRequestGenerationRef.current += 1;
       }
       currentBoardRef.current = targetBoard;
@@ -1075,6 +1078,9 @@
           setTenantFilter("");
           setAssigneeFilter("");
           setIncludeArchived(false);
+          setSelectedIds(new Set());
+          setLastSelectedId(null);
+          setFailedIds(new Set());
         })
         .catch(function (err) {
           if (!isCurrent()) return;

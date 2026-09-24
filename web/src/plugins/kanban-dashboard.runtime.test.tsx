@@ -685,6 +685,49 @@ describe("Kanban browser deep links", () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
+  it("clears bulk selection when Back returns to another board", async () => {
+    await renderKanban("/kanban?board=default");
+    await waitForText("Default task");
+    await selectBoard("ops");
+    await waitForText("Ops task");
+    const checkbox = container.querySelector('[aria-label="Select task t_ops"]');
+    if (!checkbox) throw new Error("missing task selection");
+    await click(checkbox);
+    expect(container.querySelector(".hermes-kanban-bulk-count")?.textContent).toBe("1 selected");
+
+    const popped = new Promise((resolve) =>
+      window.addEventListener("popstate", resolve, { once: true }),
+    );
+    window.history.back();
+    await act(async () => popped);
+    await waitForText("Default task");
+
+    expect(window.location.search).toBe("?board=default");
+    expect(container.querySelector(".hermes-kanban-bulk")).toBeNull();
+  });
+
+  it("clears bulk selection when Back resolves a task on another board", async () => {
+    window.history.replaceState({}, "", "/kanban?task=t_default");
+    window.history.pushState({}, "", "/kanban?board=ops");
+    await renderKanban("/kanban?board=ops");
+    await waitForText("Ops task");
+    const checkbox = container.querySelector('[aria-label="Select task t_ops"]');
+    if (!checkbox) throw new Error("missing task selection");
+    await click(checkbox);
+    expect(container.querySelector(".hermes-kanban-bulk-count")?.textContent).toBe("1 selected");
+
+    const popped = new Promise((resolve) =>
+      window.addEventListener("popstate", resolve, { once: true }),
+    );
+    window.history.back();
+    await act(async () => popped);
+    await waitForText("Default task");
+
+    expect(window.location.search).toBe("?task=t_default");
+    expect(container.querySelector(".hermes-kanban-drawer")).not.toBeNull();
+    expect(container.querySelector(".hermes-kanban-bulk")).toBeNull();
+  });
+
   it.each(["shade", "Escape"])("pushes board-only history when closing by %s", async (method) => {
     await renderKanban("/kanban?board=ops&task=t_ops");
     await waitForText("Ops task");
